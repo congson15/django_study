@@ -44,6 +44,7 @@ class ProductDetailApiView(APIView):
             return None
 
     def get(self, request, product_id, *args, **kwargs):
+        print(self,  product_id, ' HAHAHAHAHA')
         product_instance = self.get_object(product_id)
 
         if not product_instance:
@@ -76,3 +77,19 @@ class ProductDetailApiView(APIView):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def delete(self, request, product_id, *args, **kwargs):
+        product_instance = self.get_object(product_id)
+
+        if not product_instance:
+            return Response(
+                {"message": "Not found"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        product_instance.deleted = True
+        serializer = ProductSerializer(instance=product_instance,)
+
+        if not serializer.is_valid():
+             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
