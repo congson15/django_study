@@ -76,19 +76,3 @@ class ProductDetailApiView(APIView):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self, request, product_id, *args, **kwargs):
-        product_instance = self.get_object(product_id)
-
-        if not product_instance:
-            return Response(
-                {"message": "Not found"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = ProductSerializer(instance=product_instance, data=request.data, partial= True)
-
-        if not serializer.is_valid():
-             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
