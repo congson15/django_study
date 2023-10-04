@@ -5,3 +5,8 @@ class BuyerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Buyer
         fields = ["id", "name", "age"]
+
+class BuyerDetailDeserializer(serializers.ModelSerializer):
+    class Meta:
+        model = Buyer
+        fields = ["id", "name", "age"]

@@ -3,24 +3,18 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Buyer
-from .serializers import BuyerSerializer
+from .serializers import BuyerSerializer, BuyerDetailDeserializer
 
 
 # Create your views here.
 class BuyerListApiView(APIView):
 
     def get(self, request, *args, **kwargs):
-        response_data = []
-        for buyer in Buyer.objects.filter(deleted=False):
-            buyer_dict = {
-                'id': buyer.id,
-                'name': buyer.name,
-                'age': buyer.age,
-            }
 
-            response_data.append(buyer_dict)
+        serializer = BuyerDetailDeserializer(data=Buyer.objects.filter(deleted=False), many=True)
+        serializer.is_valid()
 
-        return Response(response_data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         data = {
