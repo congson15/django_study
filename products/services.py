@@ -1,6 +1,6 @@
 from common.utils import validate_query_params
 from .serializers import ProductSerializer
-from .db import get_one, get_all
+from .db_manager import get_one, get_all
 
 
 def create_product(request):
