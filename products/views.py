@@ -3,18 +3,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Product
-from .serializers import ProductSerializer, ProductDeserializer
+from .serializers import ProductSerializer, ProductDetailDeserializer
+from .services import get_product, get_products, update_product
 
 
 # Create your views here.
 class ProductListApiView(APIView):
 
     def get(self, request, *args, **kwargs):
-        serializer = ProductDeserializer(data=Product.objects.filter(deleted=False), many=True)
-        serializer.is_valid()
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(get_products(request)
+                        , status=status.HTTP_200_OK)
 
     def post(self, request, *args, **kwargs):
         serializer = ProductSerializer(data=request.data)
@@ -27,59 +25,52 @@ class ProductListApiView(APIView):
 
 
 class ProductDetailApiView(APIView):
-    def get_object(self, product_id):
-        try:
-            return Product.objects.get(id=product_id)
-        except Product.DoesNotExist:
-            return None
+
+    def handle_get(self, product_id):
+        product_instance = get_product(product_id)
+
+        if not product_instance:
+            return Response(
+                {"message": "Not found"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return product_instance
 
     def get(self, request, product_id, *args, **kwargs):
-        print(self, product_id, ' HAHAHAHAHA')
-        product_instance = self.get_object(product_id)
+        product_instance = self.handle_get(product_id)
 
-        if not product_instance:
-            return Response(
-                {"message": "Not found"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if isinstance(product_instance, Response):
+            return product_instance
 
-        product_dict = {
-            'id': product_instance.id,
-            'name': product_instance.name,
-            'price': product_instance.price,
-        }
-        return Response(product_dict, status=status.HTTP_200_OK)
+        serializer = ProductDetailDeserializer(product_instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, product_id, *args, **kwargs):
-        product_instance = self.get_object(product_id)
+        product_instance = self.handle_get(product_id)
 
-        if not product_instance:
-            return Response(
-                {"message": "Not found"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if isinstance(product_instance, Response):
+            return product_instance
 
-        serializer = ProductSerializer(instance=product_instance, data=request.data, partial=True)
+        data = request.data
+        result, errors = update_product(product_instance, data)
 
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(result, status=status.HTTP_200_OK)
 
     def delete(self, request, product_id, *args, **kwargs):
-        product_instance = self.get_object(product_id)
+        product_instance = self.handle_get(product_id)
 
-        if not product_instance:
-            return Response(
-                {"message": "Not found"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if isinstance(product_instance, Response):
+            return product_instance
+
         product_instance.deleted = True
-        serializer = ProductSerializer(instance=product_instance, )
 
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = request.data
+        result, errors = update_product(product_instance, data)
 
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(result, status=status.HTTP_200_OK)
